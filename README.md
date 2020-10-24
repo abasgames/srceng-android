@@ -1,4 +1,7 @@
 # srceng-android
+
+requires
+
 How to compile
 ./build-java.sh
 

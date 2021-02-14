@@ -12,7 +12,7 @@ In order to install it
 
 
 
-smh
+something
 
 
 To download pre-compiled apk

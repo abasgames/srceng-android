@@ -191,7 +191,7 @@ public class SDLActivity extends Activity {
 		mIsSurfaceReady = false;
 		mHasFocus = true;
 		mEGLContext = null;
-		System.loadLibrary("first");
+		//System.loadLibrary("first");
 		System.loadLibrary("SDL2");
 		System.loadLibrary("main");
 	}
@@ -211,6 +211,9 @@ public class SDLActivity extends Activity {
 
 		if( SDLActivity.mImmersiveMode != null )
 			SDLActivity.mImmersiveMode.apply();
+
+		if (sdk >= 28)
+			getWindow().getAttributes().layoutInDisplayCutoutMode = 1;
 	}
 
 	public static void startSDL() {

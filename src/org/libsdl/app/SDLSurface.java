@@ -19,17 +19,21 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import com.valvesoftware.ValveActivity2;
+import java.lang.Math;
+
+import in.celest.LauncherActivity;
 
 public class SDLSurface
-extends SurfaceView
-implements SurfaceHolder.Callback,
-View.OnKeyListener,
-View.OnTouchListener,
-SensorEventListener {
+        extends SurfaceView
+        implements SurfaceHolder.Callback,
+        View.OnKeyListener,
+        View.OnTouchListener,
+        SensorEventListener {
     public static float mHeight;
     private static SensorManager mSensorManager;
     public static float mWidth;
     public static boolean isTouch = true;
+    public static boolean mUseVolume = false;
 
     final int desiredVisibility = 5894;
     Runnable visibilityRunnable = null;
@@ -52,6 +56,7 @@ SensorEventListener {
                 }
             }
         });
+	this.mUseVolume = LauncherActivity.mPref.getBoolean( "use_volume_buttons", false );
     }
 
     public void enableSensor(int n, boolean bl) {
@@ -77,12 +82,19 @@ SensorEventListener {
     }
 
     public boolean onKey(View view, int n, KeyEvent keyEvent) {
-       if( n == KeyEvent.KEYCODE_VOLUME_DOWN || n == KeyEvent.KEYCODE_VOLUME_UP )
-            return false;
+	if( mUseVolume ) {
+		if( n == KeyEvent.KEYCODE_VOLUME_DOWN)
+			SDLActivity.onNativeJoystickAxis(5, Math.abs(keyEvent.getAction()-1));
+		else if( n == KeyEvent.KEYCODE_VOLUME_UP )
+			SDLActivity.onNativeJoystickAxis(2, Math.abs(keyEvent.getAction()-1));
+		return true;
+	} else if( n == KeyEvent.KEYCODE_VOLUME_DOWN || n == KeyEvent.KEYCODE_VOLUME_UP )
+		return false;
 
-       if( n == KeyEvent.KEYCODE_BACK )
-			n = KeyEvent.KEYCODE_ESCAPE;
-        if (keyEvent.getAction() == 0) {
+	if( n == KeyEvent.KEYCODE_BACK )
+		n = KeyEvent.KEYCODE_BUTTON_B;
+
+	if (keyEvent.getAction() == 0) {
             SDLActivity.onNativeKeyDown(n);
             return true;
         }
@@ -108,51 +120,51 @@ SensorEventListener {
         float x,y,p;
 
         switch(action) {
-		case MotionEvent.ACTION_MOVE:
-			for( i = 0; i < pointerCount; i++ )
-			{
-				pointerFingerId = event.getPointerId( i );
-				x = event.getX( i );
-				y = event.getY( i );
-				p = event.getPressure( i );
-				ValveActivity2.TouchEvent( pointerFingerId, (int)x, (int)y, 2 );
-			}
-			break;
+            case MotionEvent.ACTION_MOVE:
+                for( i = 0; i < pointerCount; i++ )
+                {
+                    pointerFingerId = event.getPointerId( i );
+                    x = event.getX( i );
+                    y = event.getY( i );
+                    p = event.getPressure( i );
+                    ValveActivity2.TouchEvent( pointerFingerId, x/mWidth, y/mHeight, 2 );
+                }
+                break;
 
-		case MotionEvent.ACTION_UP:
-		case MotionEvent.ACTION_DOWN:
-			i = 0;
-		case MotionEvent.ACTION_POINTER_UP:
-		case MotionEvent.ACTION_POINTER_DOWN:
-			// Non primary pointer up/down
-			if( i == -1 )
-			{
-				i = event.getActionIndex();
-			}
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_DOWN:
+                i = 0;
+            case MotionEvent.ACTION_POINTER_UP:
+            case MotionEvent.ACTION_POINTER_DOWN:
+                // Non primary pointer up/down
+                if( i == -1 )
+                {
+                    i = event.getActionIndex();
+                }
 
-			pointerFingerId = event.getPointerId( i );
+                pointerFingerId = event.getPointerId( i );
 
-			x = event.getX( i );
-			y = event.getY( i );
-			Log.v((String)"SDL", (String)"x: "+x);
-			Log.v((String)"SDL", (String)"y: "+y);
-				if( action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP )
-					ValveActivity2.TouchEvent( pointerFingerId, (int)x, (int)y, 1 );
-				if( action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN )
-					ValveActivity2.TouchEvent( pointerFingerId, (int)x, (int)y, 0 );
-			break;
-		case MotionEvent.ACTION_CANCEL:
-			for( i = 0; i < pointerCount; i++ )
-			{
-				pointerFingerId = event.getPointerId( i );
-				x = event.getX( i );
-				y = event.getY( i );
-				ValveActivity2.TouchEvent( pointerFingerId, (int)x, (int)y, 1 );
-			}
-			break;
+                x = event.getX( i );
+                y = event.getY( i );
+                Log.v((String)"SDL", (String)"x: "+x);
+                Log.v((String)"SDL", (String)"y: "+y);
+                if( action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP )
+                    ValveActivity2.TouchEvent( pointerFingerId, x/mWidth, y/mHeight, 1 );
+                if( action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN )
+                    ValveActivity2.TouchEvent( pointerFingerId, x/mWidth, y/mHeight, 0 );
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                for( i = 0; i < pointerCount; i++ )
+                {
+                    pointerFingerId = event.getPointerId( i );
+                    x = event.getX( i );
+                    y = event.getY( i );
+                    ValveActivity2.TouchEvent( pointerFingerId, x/mWidth, y/mHeight, 1 );
+                }
+                break;
 
-                        default: break;
-	}
+            default: break;
+        }
 
         return true;
     }
@@ -173,8 +185,8 @@ SensorEventListener {
 
                 @Override
                 public void run() {
-			if( SDLActivity.mImmersiveMode != null )
-                       		SDLActivity.mImmersiveMode.apply();
+                    if( SDLActivity.mImmersiveMode != null )
+                        SDLActivity.mImmersiveMode.apply();
                     /*SDLSurface.this.setSystemUiVisibility(5894);
                     if (SDLSurface.this.getSystemUiVisibility() != 5894) {
                         this.waitTime += 500;
@@ -199,7 +211,7 @@ SensorEventListener {
      */
     public void surfaceChanged(SurfaceHolder surfaceHolder, int n, int n2, int n3) {
         mWidth = n2;
-	mHeight = n3;
+        mHeight = n3;
         n2 = 353701890;
         switch (n) {
             default: {
@@ -262,8 +274,8 @@ SensorEventListener {
         Log.v((String)"SDL", (String)("Window size:" + mWidth + "x" + mHeight));
         SDLActivity.mIsSurfaceReady = true;
         SDLActivity.onNativeSurfaceChanged();
-	SDLActivity.startApp();
-}
+        SDLActivity.startApp();
+    }
 
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
         surfaceHolder.setType(2);
